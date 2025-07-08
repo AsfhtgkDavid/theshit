@@ -1,0 +1,39 @@
+[package]
+name = "theshit"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+license-file = "LICENSE"
+authors = ["David Lishchyshen <microdaika1@gmail.com>"]
+description = "A command-line utility that automatically detects and fixes common mistakes in shell commands with a focus on speed and usability."
+readme = "README.md"
+repository = "https://github.com/AsfhtgkDavid/theshit"
+documentation = "https://github.com/AsfhtgkDavid/theshit#readme"
+keywords = ["thefuck", "shell", "command-line", "fix", "autocorrect"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = [".github", "CONTRIBUTING.md"]
+
+[profile.release]
+panic = "abort"
+strip = "symbols"
+
+[features]
+default = ["standard_panic"]
+standard_panic = []
+
+[[bin]]
+name = "theshit"
+
+[dependencies]
+clap = { version = "4.5.40", features = ["derive"] }
+crossterm = "0.29.0"
+dirs = "6.0.0"
+include_dir = "0.7.4"
+pyo3 = "0.25.1"
+shell-words = "1.1.0"
+strum = { version = "0.27.1", features = ["derive"] }
+sysinfo = "0.35.2"
+regex = "1.11.1"
+
+[dev-dependencies]
+tempfile = "3.20.0"

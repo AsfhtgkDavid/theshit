@@ -1,0 +1,1 @@
+Adds sudo to commands that failed with permission errors. Analyzes output for patterns like "permission denied", "must be root" and prepends sudo while handling && operators and redirections.

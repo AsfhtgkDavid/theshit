@@ -1,0 +1,1 @@
+Fixes typos in the cd command. Checks if the first word has >= 50% similarity to "cd" and replaces it with the correct command.
