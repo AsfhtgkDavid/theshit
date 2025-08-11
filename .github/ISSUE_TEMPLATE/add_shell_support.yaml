@@ -1,0 +1,16 @@
+name: Request for add shell support
+description: Ask for add your favourite shell support
+title: "[Shell]: Add support for "
+labels: ["enhancement", "shell"]
+body:
+  - type: input
+    id: shell_name
+    attributes:
+      label: New shell name
+      description: Provide shell's name (e.g bash)
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
