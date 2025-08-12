@@ -9,14 +9,15 @@ pub fn get_shell_function(name: &str, path: &Path) -> String {
         "
 {name}() {{
     export SH_SHELL=bash;
-    local SH_PREV_CMD=\"$(fc -ln -1)\";
-    export SH_PREV_CMD;
+    export SH_PREV_CMD=\"$(fc -ln -1)\";
+    export SH_SHELL_ALIASES=\"$(alias)\";
     
     local SH_CMD;
     SH_CMD=$(
       command {} fix \"$@\"
     ) && eval \"$SH_CMD\";
-    
+
+    unset SH_SHELL_ALIASES;
     unset SH_PREV_CMD;
     unset SH_SHELL;
 }}
@@ -50,7 +51,10 @@ pub fn get_aliases() -> HashMap<String, String> {
             {
                 value = &value[1..value.len() - 1];
             }
-            aliases.insert(name.to_string(), value.to_string());
+            aliases.insert(
+                name.replacen("alias ", "", 1).to_string(),
+                value.to_string(),
+            );
         }
     }
     aliases
