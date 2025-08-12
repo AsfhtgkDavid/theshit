@@ -17,7 +17,8 @@ pub fn get_shell_function(name: &str, path: &Path) -> String {
     SH_CMD=$(
       {} fix $@
     ) && eval \"$SH_CMD\";
-    
+
+    unset SH_SHELL_ALIASES;
     unset SH_PREV_CMD;
     unset SH_SHELL;
 }}
