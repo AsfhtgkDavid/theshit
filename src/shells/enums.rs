@@ -1,4 +1,4 @@
-use super::{bash, zsh};
+use super::{bash, fish, zsh};
 use std::collections::HashMap;
 use std::io::Result;
 use std::path::Path;
@@ -11,6 +11,9 @@ pub enum Shell {
 
     #[strum(serialize = "zsh")]
     Zsh,
+
+    #[strum(serialize = "fish")]
+    Fish,
 }
 
 impl Shell {
@@ -18,18 +21,21 @@ impl Shell {
         match self {
             Shell::Bash => bash::get_shell_function(name, path),
             Shell::Zsh => zsh::get_shell_function(name, path),
+            Shell::Fish => fish::get_shell_function(name, path),
         }
     }
     pub fn setup_alias(&self, name: &str, path: &Path) -> Result<()> {
         match self {
             Shell::Bash => bash::setup_alias(name, path),
             Shell::Zsh => zsh::setup_alias(name, path),
+            Shell::Fish => fish::setup_alias(name, path),
         }
     }
     pub fn get_aliases(&self) -> HashMap<String, String> {
         match self {
             Shell::Bash => bash::get_aliases(),
             Shell::Zsh => zsh::get_aliases(),
+            Shell::Fish => fish::get_aliases(),
         }
     }
 }
