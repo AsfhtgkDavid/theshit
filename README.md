@@ -80,8 +80,9 @@ The tool will suggest corrections. Use:
 
 ## Supported Shells
 
-- **Bash** - Full support with alias expansion
-- **Zsh** - Full support with alias expansion
+- **Bash**
+- **Zsh**
+- **Fish**
 
 ## Built-in Rules
 
