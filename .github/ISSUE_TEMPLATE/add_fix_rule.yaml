@@ -1,0 +1,17 @@
+name: Request for add fix rule
+description: Ask for add your favourite fix rule
+title: "[Fix Rule]: Add "
+labels: [ "enhancement", "fix rule" ]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description new fix rule
+      description: Provide a brief description of the new fix rule you want to add
+    validations:
+      required: true
+  - type: textarea
+    id: realization_example
+    attributes:
+      label: Realization example
+      description: Provide an example of how the fix rule should be implemented, if you can
