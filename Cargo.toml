@@ -11,7 +11,7 @@ repository = "https://github.com/AsfhtgkDavid/theshit"
 documentation = "https://github.com/AsfhtgkDavid/theshit#readme"
 keywords = ["thefuck", "shell", "command-line", "fix", "autocorrect"]
 categories = ["command-line-utilities", "development-tools"]
-exclude = [".github", "CONTRIBUTING.md"]
+exclude = [".github", "CONTRIBUTING.md", "**/.gitkeep"]
 
 [profile.release]
 panic = "abort"

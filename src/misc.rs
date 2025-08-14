@@ -39,7 +39,11 @@ fn copy_dir_recursive(src: &Dir, dst: &Path) -> Result<()> {
         let dst_path = dst.join(entry.path().strip_prefix(src.path()).unwrap());
         match entry {
             DirEntry::Dir(dir) => copy_dir_recursive(dir, &dst_path)?,
-            DirEntry::File(file) => fs::write(&dst_path, file.contents())?,
+            DirEntry::File(file) => {
+                if entry.path().file_name().unwrap_or_default() != ".gitkeep" {
+                    fs::write(&dst_path, file.contents())?
+                }
+            }
         }
     }
     Ok(())
