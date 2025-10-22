@@ -248,6 +248,8 @@ The tool sets these environment variables during execution:
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
 
+For a quick overview of the project architecture, you can use  [Code2tutorial](https://code2tutorial.com/tutorial/711fc304-35d9-4c8a-a743-c3ddf1c3d09e/index.md). 
+
 ## Bug Reports
 
 If you encounter a bug or have a feature request, please [open an issue](https://github.com/AsfhtgkDavid/theshit/issues)
