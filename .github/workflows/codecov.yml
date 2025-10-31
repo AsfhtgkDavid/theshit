@@ -34,5 +34,3 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: Run tests
-        run: script -q -e -c "cargo test --verbose"
