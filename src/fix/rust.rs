@@ -46,3 +46,86 @@ impl NativeRule {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fix::structs::CommandOutput;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_native_rule_from_str_sudo() {
+        let rule = NativeRule::from_str("sudo");
+        assert!(rule.is_ok());
+        assert!(matches!(rule.unwrap(), NativeRule::Sudo));
+    }
+
+    #[test]
+    fn test_native_rule_from_str_to_cd() {
+        let rule = NativeRule::from_str("to_cd");
+        assert!(rule.is_ok());
+        assert!(matches!(rule.unwrap(), NativeRule::ToCd));
+    }
+
+    #[test]
+    fn test_native_rule_from_str_unsudo() {
+        let rule = NativeRule::from_str("unsudo");
+        assert!(rule.is_ok());
+        assert!(matches!(rule.unwrap(), NativeRule::Unsudo));
+    }
+
+    #[test]
+    fn test_native_rule_from_str_mkdir_p() {
+        let rule = NativeRule::from_str("mkdir_p");
+        assert!(rule.is_ok());
+        assert!(matches!(rule.unwrap(), NativeRule::MkdirP));
+    }
+
+    #[test]
+    fn test_native_rule_from_str_cargo_no_command() {
+        let rule = NativeRule::from_str("cargo_no_command");
+        assert!(rule.is_ok());
+        assert!(matches!(rule.unwrap(), NativeRule::CargoNoCommand));
+    }
+
+    #[test]
+    fn test_native_rule_from_str_invalid() {
+        let rule = NativeRule::from_str("invalid_rule");
+        assert!(rule.is_err());
+    }
+
+    #[test]
+    fn test_fix_native_sudo() {
+        let command = Command::new(
+            "some_command".to_string(),
+            CommandOutput::new("".to_string(), "permission denied".to_string()),
+        );
+        let rule = NativeRule::Sudo;
+        let result = rule.fix_native(&command);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), "sudo some_command");
+    }
+
+    #[test]
+    fn test_fix_native_to_cd() {
+        let command = Command::new(
+            "cs /some/directory".to_string(),
+            CommandOutput::new("".to_string(), "".to_string()),
+        );
+        let rule = NativeRule::ToCd;
+        let result = rule.fix_native(&command);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), "cd /some/directory");
+    }
+
+    #[test]
+    fn test_fix_native_no_match() {
+        let command = Command::new(
+            "ls -l".to_string(),
+            CommandOutput::new("".to_string(), "".to_string()),
+        );
+        let rule = NativeRule::Sudo;
+        let result = rule.fix_native(&command);
+        assert!(result.is_none());
+    }
+}

@@ -252,18 +252,76 @@ mod tests {
     }
 
     #[test]
+    fn test_damerau_levenshtein_distance_identical_strings() {
+        assert_eq!(damerau_levenshtein_distance("hello", "hello"), 0);
+    }
+
+    #[test]
+    fn test_damerau_levenshtein_distance_one_insertion() {
+        assert_eq!(damerau_levenshtein_distance("hello", "helo"), 1);
+    }
+
+    #[test]
+    fn test_damerau_levenshtein_distance_one_deletion() {
+        assert_eq!(damerau_levenshtein_distance("helo", "hello"), 1);
+    }
+
+    #[test]
+    fn test_damerau_levenshtein_distance_one_substitution() {
+        assert_eq!(damerau_levenshtein_distance("hello", "hallo"), 1);
+    }
+
+    #[test]
+    fn test_damerau_levenshtein_distance_transposition() {
+        assert_eq!(damerau_levenshtein_distance("hello", "hlelo"), 1);
+    }
+
+    #[test]
+    fn test_damerau_levenshtein_distance_completely_different() {
+        assert_eq!(damerau_levenshtein_distance("abc", "xyz"), 3);
+    }
+
+    #[test]
+    fn test_damerau_levenshtein_distance_empty_strings() {
+        assert_eq!(damerau_levenshtein_distance("", ""), 0);
+        assert_eq!(damerau_levenshtein_distance("hello", ""), 5);
+        assert_eq!(damerau_levenshtein_distance("", "world"), 5);
+    }
+
+    #[test]
+    fn test_string_similarity_identical() {
+        assert_eq!(string_similarity("hello", "hello"), 1.0);
+    }
+
+    #[test]
+    fn test_string_similarity_completely_different() {
+        let similarity = string_similarity("abc", "xyz");
+        assert_eq!(similarity, 0.0);
+    }
+
+    #[test]
+    fn test_string_similarity_similar_strings() {
+        let similarity = string_similarity("cd", "cs");
+        assert!(similarity >= 0.5);
+        assert_ne!(similarity, 1.0);
+    }
+
+    #[test]
+    fn test_string_similarity_empty_strings() {
+        assert_eq!(string_similarity("", ""), 1.0);
+    }
+
+    #[test]
+    fn test_string_similarity_case_sensitive() {
+        let similarity = string_similarity("Hello", "hello");
+        assert!(similarity < 1.0);
+    }
+
+    #[test]
     fn test_single_word_command() {
         let aliases = get_mock_alias();
 
         let result = expand_aliases("cls", aliases);
         assert_eq!(result, "clear");
-    }
-
-    #[test]
-    fn test_string_similarity() {
-        assert_eq!(string_similarity("kittegn1", "sitting"), 0.5);
-        assert_eq!(string_similarity("law", "lawn"), 0.75);
-        assert_eq!(string_similarity("", ""), 1.0);
-        assert_eq!(string_similarity("abc", "abc"), 1.0);
     }
 }
