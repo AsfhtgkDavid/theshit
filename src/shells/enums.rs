@@ -39,3 +39,64 @@ impl Shell {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_shell_from_str_bash() {
+        let shell = Shell::from_str("bash");
+        assert!(shell.is_ok());
+        assert!(matches!(shell.unwrap(), Shell::Bash));
+    }
+
+    #[test]
+    fn test_shell_from_str_zsh() {
+        let shell = Shell::from_str("zsh");
+        assert!(shell.is_ok());
+        assert!(matches!(shell.unwrap(), Shell::Zsh));
+    }
+
+    #[test]
+    fn test_shell_from_str_fish() {
+        let shell = Shell::from_str("fish");
+        assert!(shell.is_ok());
+        assert!(matches!(shell.unwrap(), Shell::Fish));
+    }
+
+    #[test]
+    fn test_shell_from_str_invalid() {
+        let shell = Shell::from_str("invalid");
+        assert!(shell.is_err());
+    }
+
+    #[test]
+    fn test_get_shell_function_bash() {
+        let shell = Shell::Bash;
+        let path = PathBuf::from("/usr/bin/theshit");
+        let result = shell.get_shell_function("shit", &path);
+        assert!(result.contains("shit()"));
+        assert!(result.contains("SH_SHELL=bash"));
+    }
+
+    #[test]
+    fn test_get_shell_function_zsh() {
+        let shell = Shell::Zsh;
+        let path = PathBuf::from("/usr/bin/theshit");
+        let result = shell.get_shell_function("shit", &path);
+        assert!(result.contains("shit()"));
+        assert!(result.contains("SH_SHELL=zsh"));
+    }
+
+    #[test]
+    fn test_get_shell_function_fish() {
+        let shell = Shell::Fish;
+        let path = PathBuf::from("/usr/bin/theshit");
+        let result = shell.get_shell_function("shit", &path);
+        assert!(result.contains("function shit"));
+        assert!(result.contains("SH_SHELL fish"));
+    }
+}

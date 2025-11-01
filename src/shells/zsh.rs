@@ -59,3 +59,60 @@ pub fn get_aliases() -> HashMap<String, String> {
     }
     aliases
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_get_shell_function_contains_name() {
+        let path = PathBuf::from("/usr/bin/theshit");
+        let result = get_shell_function("shit", &path);
+        assert!(result.contains("shit()"));
+    }
+
+    #[test]
+    fn test_get_shell_function_contains_path() {
+        let path = PathBuf::from("/usr/bin/theshit");
+        let result = get_shell_function("shit", &path);
+        assert!(result.contains("/usr/bin/theshit"));
+    }
+
+    #[test]
+    fn test_get_shell_function_exports_shell_type() {
+        let path = PathBuf::from("/usr/bin/theshit");
+        let result = get_shell_function("shit", &path);
+        assert!(result.contains("export SH_SHELL=zsh"));
+    }
+
+    #[test]
+    fn test_get_aliases_empty() {
+        let aliases = get_aliases();
+        assert!(aliases.is_empty());
+    }
+
+    #[test]
+    fn test_get_aliases_with_double_quotes() {
+        unsafe {
+            env::set_var("SH_SHELL_ALIASES", "grep=\"grep --color=auto\"");
+        }
+        let aliases = get_aliases();
+        assert_eq!(aliases.get("grep"), Some(&"\"grep --color".to_string()));
+        unsafe {
+            env::remove_var("SH_SHELL_ALIASES");
+        }
+    }
+
+    #[test]
+    fn test_get_aliases_with_single_quotes() {
+        unsafe {
+            env::set_var("SH_SHELL_ALIASES", "cls='clear'");
+        }
+        let aliases = get_aliases();
+        assert_eq!(aliases.get("cls"), Some(&"clear".to_string()));
+        unsafe {
+            env::remove_var("SH_SHELL_ALIASES");
+        }
+    }
+}

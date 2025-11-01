@@ -33,3 +33,68 @@ fn get_current_shell_by_process() -> Option<Shell> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_current_shell_by_env() {
+        unsafe {
+            env::set_var("SH_SHELL", "bash");
+        }
+        let shell = get_current_shell_by_env();
+        assert!(shell.is_some());
+        assert!(matches!(shell.unwrap(), Shell::Bash));
+        unsafe {
+            env::remove_var("SH_SHELL");
+        }
+    }
+
+    #[test]
+    fn test_get_current_shell_by_env_zsh() {
+        unsafe {
+            env::set_var("SH_SHELL", "zsh");
+        }
+        let shell = get_current_shell_by_env();
+        assert!(shell.is_some());
+        assert!(matches!(shell.unwrap(), Shell::Zsh));
+        unsafe {
+            env::remove_var("SH_SHELL");
+        }
+    }
+
+    #[test]
+    fn test_get_current_shell_by_env_fish() {
+        unsafe {
+            env::set_var("SH_SHELL", "fish");
+        }
+        let shell = get_current_shell_by_env();
+        assert!(shell.is_some());
+        assert!(matches!(shell.unwrap(), Shell::Fish));
+        unsafe {
+            env::remove_var("SH_SHELL");
+        }
+    }
+
+    #[test]
+    fn test_get_current_shell_by_env_invalid() {
+        unsafe {
+            env::set_var("SH_SHELL", "invalid");
+        }
+        let shell = get_current_shell_by_env();
+        assert!(shell.is_none());
+        unsafe {
+            env::remove_var("SH_SHELL");
+        }
+    }
+
+    #[test]
+    fn test_get_current_shell_by_env_not_set() {
+        unsafe {
+            env::remove_var("SH_SHELL");
+        }
+        let shell = get_current_shell_by_env();
+        assert!(shell.is_none());
+    }
+}

@@ -92,4 +92,49 @@ mod tests {
         }
         assert!(!terminal::is_raw_mode_enabled().unwrap());
     }
+
+    #[test]
+    fn test_command_output_new() {
+        let output = CommandOutput::new("test stdout".to_string(), "test stderr".to_string());
+        assert_eq!(output.stdout(), "test stdout");
+        assert_eq!(output.stderr(), "test stderr");
+    }
+
+    #[test]
+    fn test_command_output_from_output() {
+        let process_output = Output {
+            status: std::process::ExitStatus::default(),
+            stdout: b"test stdout".to_vec(),
+            stderr: b"test stderr".to_vec(),
+        };
+        let output = CommandOutput::from(process_output);
+        assert_eq!(output.stdout(), "test stdout");
+        assert_eq!(output.stderr(), "test stderr");
+    }
+
+    #[test]
+    fn test_command_new() {
+        let cmd_output = CommandOutput::new("stdout".to_string(), "stderr".to_string());
+        let command = Command::new("echo hello world".to_string(), cmd_output);
+        assert_eq!(command.command(), "echo hello world");
+        assert_eq!(command.parts(), &["echo", "hello", "world"]);
+        assert_eq!(command.output().stdout(), "stdout");
+        assert_eq!(command.output().stderr(), "stderr");
+    }
+
+    #[test]
+    fn test_command_with_quoted_args() {
+        let cmd_output = CommandOutput::new("".to_string(), "".to_string());
+        let command = Command::new("echo 'hello world'".to_string(), cmd_output);
+        assert_eq!(command.command(), "echo 'hello world'");
+        assert_eq!(command.parts(), &["echo", "hello world"]);
+    }
+
+    #[test]
+    fn test_command_empty() {
+        let cmd_output = CommandOutput::new("".to_string(), "".to_string());
+        let command = Command::new("".to_string(), cmd_output);
+        assert_eq!(command.command(), "");
+        assert!(command.parts().is_empty());
+    }
 }
