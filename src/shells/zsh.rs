@@ -45,9 +45,7 @@ pub fn get_aliases() -> HashMap<String, String> {
         if !raw_alias.contains('=') || raw_alias.is_empty() {
             continue;
         }
-        if let (Some(name), Some(mut value)) =
-            (raw_alias.split('=').next(), raw_alias.split('=').nth(1))
-        {
+        if let Some((name, mut value)) = raw_alias.split_once('=') {
             let value_bytes = value.as_bytes();
             if (value_bytes[0] == b'"' && value_bytes[value.len() - 1] == b'"')
                 || (value_bytes[0] == b'\'' && value_bytes[value.len() - 1] == b'\'')
@@ -98,10 +96,7 @@ mod tests {
             env::set_var("SH_SHELL_ALIASES", "grep=\"grep --color=auto\"");
         }
         let aliases = get_aliases();
-        assert_eq!(
-            aliases.get("grep"),
-            Some(&"\"grep --color=auto".to_string())
-        );
+        assert_eq!(aliases.get("grep"), Some(&"grep --color=auto".to_string()));
         unsafe {
             env::remove_var("SH_SHELL_ALIASES");
         }
