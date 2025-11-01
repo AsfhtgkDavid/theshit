@@ -1,5 +1,9 @@
 # The Shit [![Version][version-badge]][version-link] [![MIT License][license-badge]](LICENSE.md) [![codecov][codecov-badge]][codecov-link]
 
+<p align="center">
+  <img src="theshit-demo.gif" alt="theshit demo" />
+</p>
+
 A command-line utility that automatically fixes common shell command errors, inspired
 by [thefuck](https://github.com/nvbn/thefuck). When you type a command incorrectly, just run `shit` and it will suggest
 the correct command.
@@ -248,7 +252,8 @@ The tool sets these environment variables during execution:
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
 
-For a quick overview of the project architecture, you can use  [Code2tutorial](https://code2tutorial.com/tutorial/711fc304-35d9-4c8a-a743-c3ddf1c3d09e/index.md). 
+For a quick overview of the project architecture, you can
+use  [Code2tutorial](https://code2tutorial.com/tutorial/711fc304-35d9-4c8a-a743-c3ddf1c3d09e/index.md).
 
 ## Bug Reports
 
