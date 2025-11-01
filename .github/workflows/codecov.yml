@@ -28,7 +28,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Run tests and generate coverage
-        run: script -q -e -c "cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info -- -- --test-threads=1"
+        run: script -q -e -c "cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info -- --test-threads=1"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
