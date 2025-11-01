@@ -1,5 +1,3 @@
-# Конфигурация Codecov для проекта theshit (Rust)
-
 codecov:
   notify:
     require_ci_to_pass: true
