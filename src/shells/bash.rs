@@ -111,7 +111,10 @@ mod tests {
             env::set_var("SH_SHELL_ALIASES", "alias grep=\"grep --color=auto\"");
         }
         let aliases = get_aliases();
-        assert_eq!(aliases.get("grep"), Some(&"\"grep --color".to_string()));
+        assert_eq!(
+            aliases.get("grep"),
+            Some(&"\"grep --color=auto".to_string())
+        );
         unsafe {
             env::remove_var("SH_SHELL_ALIASES");
         }
