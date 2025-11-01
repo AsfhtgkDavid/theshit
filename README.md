@@ -1,4 +1,4 @@
-# The Shit [![Version][version-badge]][version-link] [![MIT License][license-badge]](LICENSE.md)
+# The Shit [![Version][version-badge]][version-link] [![MIT License][license-badge]](LICENSE.md) [![codecov][codecov-badge]][codecov-link]
 
 A command-line utility that automatically fixes common shell command errors, inspired
 by [thefuck](https://github.com/nvbn/thefuck). When you type a command incorrectly, just run `shit` and it will suggest
@@ -295,3 +295,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [version-link]: https://crates.io/crates/theshit
 
 [license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+
+[codecov-badge]: https://codecov.io/github/asfhtgkdavid/theshit/graph/badge.svg?token=016D8DZWLG
+
+[codecov-link]: https://codecov.io/github/asfhtgkdavid/theshit
