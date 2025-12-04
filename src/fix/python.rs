@@ -37,24 +37,74 @@ pub fn process_python_rules(
                     continue;
                 }
             };
-            let match_func = module.getattr("match")?;
-            let fix_func = module.getattr("fix")?;
+            let match_func = match module.getattr("match") {
+                Ok(func) => func,
+                Err(e) => {
+                    eprintln!(
+                        "{}{}{}",
+                        "Failed to get 'match' function from rule '".yellow(),
+                        rule_path.display(),
+                        "': ".yellow(),
+                    );
+                    eprintln!("{e}");
+                    continue;
+                }
+            };
+            let fix_func = match module.getattr("fix") {
+                Ok(func) => func,
+                Err(e) => {
+                    eprintln!(
+                        "{}{}{}",
+                        "Failed to get 'fix' function from rule '".yellow(),
+                        rule_path.display(),
+                        "': ".yellow(),
+                    );
+                    eprintln!("{e}");
+                    continue;
+                }
+            };
             if match_func.is_callable() && fix_func.is_callable() {
-                if match_func
+                let is_match = match match_func
                     .call1((
                         command.command(),
                         command.output().stdout(),
                         command.output().stderr(),
-                    ))?
-                    .extract::<bool>()?
+                    ))
+                    .and_then(|result| result.extract::<bool>())
                 {
-                    let fixed_command: String = fix_func
+                    Ok(result) => result,
+                    Err(e) => {
+                        eprintln!(
+                            "{}{}{}",
+                            "Failed to execute 'match' function in rule '".yellow(),
+                            rule_path.display(),
+                            "': ".yellow(),
+                        );
+                        eprintln!("{e}");
+                        continue;
+                    }
+                };
+                if is_match {
+                    let fixed_command: String = match fix_func
                         .call1((
                             command.command(),
                             command.output().stdout(),
                             command.output().stderr(),
-                        ))?
-                        .extract()?;
+                        ))
+                        .and_then(|result| result.extract())
+                    {
+                        Ok(cmd) => cmd,
+                        Err(e) => {
+                            eprintln!(
+                                "{}{}{}",
+                                "Failed to execute 'fix' function in rule '".yellow(),
+                                rule_path.display(),
+                                "': ".yellow(),
+                            );
+                            eprintln!("{e}");
+                            continue;
+                        }
+                    };
                     fixed_commands.push(fixed_command);
                 }
             } else {
