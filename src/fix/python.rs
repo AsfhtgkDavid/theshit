@@ -2,7 +2,35 @@ use super::structs::Command;
 use crossterm::style::Stylize;
 use pyo3::types::{PyAnyMethods, PyList, PyListMethods};
 use pyo3::{PyResult, Python};
+use std::fs;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
+
+fn check_security(path: &Path) -> Result<(), String> {
+    let metadata = fs::metadata(path).map_err(|e| e.to_string())?;
+    let file_uid = metadata.uid();
+    let current_uid = unsafe { libc::geteuid() };
+
+    if current_uid != file_uid {
+        return Err(format!(
+            "{} Running with UID {}, but file '{}' is owned by UID {}. Aborting to prevent privilege escalation.",
+            "SECURITY ERROR:".red().bold(),
+            current_uid,
+            path.display(),
+            file_uid
+        ));
+    }
+
+    if metadata.permissions().mode() & 0o022 == 0 {
+        return Err(format!(
+            "{} Python rule '{}' is writable by non-owners. Aborting to prevent privilege escalation.",
+            "SECURITY ERROR:".red().bold(),
+            path.display()
+        ));
+    }
+
+    Ok(())
+}
 
 pub fn process_python_rules(
     command: &Command,
@@ -20,6 +48,11 @@ pub fn process_python_rules(
         }
 
         for rule_path in rule_paths {
+            if let Err(e) = check_security(&rule_path) {
+                eprintln!("{}", e);
+                continue;
+            }
+
             let module_name = match get_module_name(&module_path, &rule_path) {
                 Some(module_name) => module_name,
                 None => continue,
