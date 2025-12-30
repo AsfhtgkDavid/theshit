@@ -1,6 +1,6 @@
 [package]
 name = "theshit"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 license-file = "LICENSE"
@@ -34,6 +34,7 @@ shell-words = "1.1.0"
 strum = { version = "0.27.1", features = ["derive"] }
 sysinfo = "0.35.2"
 regex = "1.11.1"
+libc = "0.2.178"
 
 [dev-dependencies]
 tempfile = "3.20.0"
