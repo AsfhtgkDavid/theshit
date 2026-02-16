@@ -67,7 +67,7 @@ After setup, restart your shell or source your configuration file.
 
 ### Basic usage
 
-When a command fails, just type `theshit` (or your custom alias):
+When a command fails, just type `shit` (or your custom alias):
 
 ```bash
 $ sl
