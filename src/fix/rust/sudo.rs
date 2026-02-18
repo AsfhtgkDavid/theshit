@@ -48,13 +48,13 @@ pub fn is_match(command: &Command) -> bool {
     false
 }
 
-pub fn fix(command: &Command) -> String {
+pub fn fix(command: &Command) -> Result<String, crate::errors::TheShitError> {
     if command.command().contains("&&") {
-        format!("sudo sh -c '{}'", command.command().replace("sudo", ""))
+        Ok(format!("sudo sh -c '{}'", command.command().replace("sudo", "")))
     } else if command.command().contains('>') {
-        format!("sudo sh -c \"{}\"", command.command().replace("\"", "\\\""))
+        Ok(format!("sudo sh -c \"{}\"", command.command().replace("\"", "\\\"")))
     } else {
-        format!("sudo {}", command.command())
+        Ok(format!("sudo {}", command.command()))
     }
 }
 

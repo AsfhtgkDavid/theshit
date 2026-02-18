@@ -4,6 +4,7 @@ mod structs;
 
 use crate::fix::rust::NativeRule;
 use crate::fix::structs::CommandOutput;
+use crate::errors::TheShitError;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
 use crossterm::style::Stylize;
 use std::io::{ErrorKind, Write};
@@ -15,7 +16,7 @@ use std::time::Duration;
 use std::{fs, io, thread};
 use structs::RawModeGuard;
 
-pub fn fix_command(command: String, expand_command: String) -> io::Result<String> {
+pub fn fix_command(command: String, expand_command: String) -> Result<String, TheShitError> {
     let command_output = match get_command_output(expand_command) {
         Ok(output) => output,
         Err(e) => match e.kind() {
@@ -29,13 +30,13 @@ pub fn fix_command(command: String, expand_command: String) -> io::Result<String
             ),
             _ => {
                 eprintln!("{}: {}", "Error executing command".red(), e);
-                return Err(e);
+                return Err(TheShitError::Io(e));
             }
         },
     };
     let command_struct = structs::Command::new(command, command_output);
     let active_rules_dir = dirs::config_dir()
-        .ok_or(ErrorKind::NotFound)?
+        .ok_or_else(|| TheShitError::Config("Could not determine config directory".to_string()))?
         .join("theshit/fix_rules/active");
     let mut fixed_commands: Vec<String> = vec![];
     let mut python_rules: Vec<PathBuf> = vec![];
@@ -44,7 +45,7 @@ pub fn fix_command(command: String, expand_command: String) -> io::Result<String
         let path = rule.path();
         if path
             .file_name()
-            .unwrap_or_else(|| panic!("Can't get get file name for {}", path.display()))
+            .ok_or_else(|| TheShitError::Unknown(format!("Can't get file name for {}", path.display())))?
             .to_string_lossy()
             == "__pycache__"
         {
@@ -64,8 +65,11 @@ pub fn fix_command(command: String, expand_command: String) -> io::Result<String
                         NativeRule::from_str(native_rule_name.to_string_lossy().as_ref());
                     match native_rule {
                         Ok(rule) => {
-                            if let Some(fixed) = rule.fix_native(&command_struct) {
-                                fixed_commands.push(fixed)
+                            if let Some(fixed_res) = rule.fix_native(&command_struct) {
+                                match fixed_res {
+                                    Ok(fixed) => fixed_commands.push(fixed),
+                                    Err(e) => eprintln!("{}: {}", "Native rule processing failed".red(), e),
+                                }
                             }
                         }
                         Err(_) => {
@@ -100,7 +104,7 @@ pub fn fix_command(command: String, expand_command: String) -> io::Result<String
             Err(e) => eprintln!("{}: {}", "Python rules processing failed".red(), e),
         }
     }
-    Ok(choose_fixed_command(fixed_commands))
+    Ok(choose_fixed_command(fixed_commands)?)
 }
 
 fn get_command_timeout(command_name: &str) -> Duration {
@@ -183,14 +187,14 @@ fn get_command_output(expand_command: String) -> io::Result<CommandOutput> {
     }
 }
 
-fn choose_fixed_command(mut fixed_commands: Vec<String>) -> String {
+fn choose_fixed_command(mut fixed_commands: Vec<String>) -> Result<String, TheShitError> {
     if fixed_commands.is_empty() {
         eprintln!(
             "{}: {}",
             "No fixed commands found".yellow(),
             "Exiting...".red()
         );
-        std::process::exit(1);
+        return Err(TheShitError::Unknown("No fixed commands found".to_string()));
     }
 
     let mut current_command = fixed_commands.first().unwrap();
@@ -267,13 +271,13 @@ fn choose_fixed_command(mut fixed_commands: Vec<String>) -> String {
                             drop(_raw_mode_guard);
                             eprintln!();
                             eprintln!("{}: {}", "Selected command: ".green(), &current_command);
-                            return fixed_commands.remove(current_index);
+                            return Ok(fixed_commands.remove(current_index));
                         }
                         (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
                             drop(_raw_mode_guard);
                             eprintln!();
                             eprintln!("{}: {}", "Exiting...".yellow(), "User interrupted".red());
-                            std::process::exit(1);
+                            return Err(TheShitError::Unknown("User interrupted".to_string()));
                         }
                         _ => {}
                     }
@@ -282,7 +286,7 @@ fn choose_fixed_command(mut fixed_commands: Vec<String>) -> String {
             Err(_) => {
                 eprintln!("{}: {}", "Error reading input".red(), "Exiting...".yellow());
                 drop(_raw_mode_guard);
-                std::process::exit(1);
+                return Err(TheShitError::Io(io::Error::new(ErrorKind::Other, "Error reading input")));
             }
         }
     }

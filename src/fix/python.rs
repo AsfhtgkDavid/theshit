@@ -1,4 +1,5 @@
 use super::structs::Command;
+use crate::errors::TheShitError;
 use crossterm::style::Stylize;
 use pyo3::types::{PyAnyMethods, PyList, PyListMethods};
 use pyo3::{PyResult, Python};
@@ -6,27 +7,25 @@ use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
-fn check_security(path: &Path) -> Result<(), String> {
+fn check_security(path: &Path) -> Result<(), TheShitError> {
     let metadata = fs::metadata(path).map_err(|e| e.to_string())?;
     let file_uid = metadata.uid();
     let current_uid = unsafe { libc::geteuid() };
 
     if current_uid != file_uid {
-        return Err(format!(
-            "{} Running with UID {}, but file '{}' is owned by UID {}. Aborting to prevent privilege escalation.",
-            "SECURITY ERROR:".red().bold(),
+        return Err(TheShitError::Security(format!(
+            "Running with UID {}, but file '{}' is owned by UID {}. Aborting to prevent privilege escalation.",
             current_uid,
             path.display(),
             file_uid
-        ));
+        )));
     }
 
     if metadata.permissions().mode() & 0o022 == 0 {
-        return Err(format!(
-            "{} Python rule '{}' is writable by non-owners. Aborting to prevent privilege escalation.",
-            "SECURITY ERROR:".red().bold(),
+        return Err(TheShitError::Security(format!(
+            "Python rule '{}' is writable by non-owners. Aborting to prevent privilege escalation.",
             path.display()
-        ));
+        )));
     }
 
     Ok(())
@@ -35,9 +34,9 @@ fn check_security(path: &Path) -> Result<(), String> {
 pub fn process_python_rules(
     command: &Command,
     rule_paths: Vec<PathBuf>,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<String>, TheShitError> {
     let module_path = get_common_parent(&rule_paths)
-        .ok_or("No common parent found for rule paths".to_string())?;
+        .ok_or_else(|| TheShitError::Config("No common parent found for rule paths".to_string()))?;
     let mut fixed_commands: Vec<String> = vec![];
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py| -> PyResult<()> {
@@ -100,8 +99,7 @@ pub fn process_python_rules(
             }
         }
         Ok(())
-    })
-    .map_err(|err| format!("Failed to process Python rules: {err}"))?;
+    })?;
     Ok(fixed_commands)
 }
 
