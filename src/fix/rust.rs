@@ -5,6 +5,7 @@ mod to_cd;
 mod unsudo;
 
 use super::structs::Command;
+use crate::errors::TheShitError;
 use strum::EnumString;
 
 #[derive(EnumString, Debug)]
@@ -22,7 +23,7 @@ pub enum NativeRule {
 }
 
 impl NativeRule {
-    pub fn fix_native(self, command: &Command) -> Option<String> {
+    pub fn fix_native(self, command: &Command) -> Option<Result<String, TheShitError>> {
         match self {
             NativeRule::Sudo => Self::match_and_fix(sudo::is_match, sudo::fix, command),
             NativeRule::ToCd => Self::match_and_fix(to_cd::is_match, to_cd::fix, command),
@@ -36,9 +37,9 @@ impl NativeRule {
 
     fn match_and_fix(
         match_function: fn(&Command) -> bool,
-        fix_function: fn(&Command) -> String,
+        fix_function: fn(&Command) -> Result<String, TheShitError>,
         command: &Command,
-    ) -> Option<String> {
+    ) -> Option<Result<String, TheShitError>> {
         if match_function(command) {
             Some(fix_function(command))
         } else {

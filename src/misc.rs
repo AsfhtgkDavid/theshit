@@ -4,8 +4,9 @@ use include_dir::{Dir, DirEntry, include_dir};
 use regex::Regex;
 use std::cmp::{max, min};
 use std::collections::HashMap;
+use crate::errors::TheShitError;
 use std::fs;
-use std::io::{ErrorKind, Result};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 static ASSETS_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
@@ -31,12 +32,13 @@ macro_rules! min_of {
     );
 }
 
-fn copy_dir_recursive(src: &Dir, dst: &Path) -> Result<()> {
+fn copy_dir_recursive(src: &Dir, dst: &Path) -> Result<(), TheShitError> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
     }
     for entry in src.entries() {
-        let dst_path = dst.join(entry.path().strip_prefix(src.path()).unwrap());
+        let path = src.path();
+        let dst_path = dst.join(entry.path().strip_prefix(path).map_err(|e| TheShitError::Unknown(e.to_string()))?);
         match entry {
             DirEntry::Dir(dir) => copy_dir_recursive(dir, &dst_path)?,
             DirEntry::File(file) => {
@@ -49,27 +51,33 @@ fn copy_dir_recursive(src: &Dir, dst: &Path) -> Result<()> {
     Ok(())
 }
 
-pub fn create_default_fix_rules(rules_dir: PathBuf) -> Result<()> {
+pub fn create_default_fix_rules(rules_dir: PathBuf) -> Result<(), TheShitError> {
     if rules_dir.as_path().exists() {
-        return Err(ErrorKind::AlreadyExists.into());
+        return Err(TheShitError::Io(std::io::Error::from(ErrorKind::AlreadyExists)));
     }
 
     copy_dir_recursive(
         ASSETS_DIR
             .get_dir("rules")
-            .expect("Active rules didn't find"),
+            .ok_or_else(|| TheShitError::Config("Active rules not found in assets".to_string()))?,
         &rules_dir,
     )?;
     Ok(())
 }
 
-pub fn expand_aliases(command: &str, aliases: HashMap<String, String>) -> String {
-    let binary = command.split(' ').next().expect("Could not find binary");
+pub fn expand_aliases(
+    command: &str,
+    aliases: HashMap<String, String>,
+) -> Result<String, TheShitError> {
+    let binary = command
+        .split(' ')
+        .next()
+        .ok_or_else(|| TheShitError::Unknown("Could not find binary".to_string()))?;
 
     if aliases.contains_key(binary) {
-        command.replacen(binary, &aliases[binary], 1)
+        Ok(command.replacen(binary, &aliases[binary], 1))
     } else {
-        command.to_string()
+        Ok(command.to_string())
     }
 }
 
@@ -118,18 +126,18 @@ pub fn split_command(command: &str) -> Vec<String> {
         .unwrap_or(command.split_whitespace().map(|s| s.to_string()).collect())
 }
 
-pub fn replace_argument(script: &str, from: &str, to: &str) -> String {
+pub fn replace_argument(script: &str, from: &str, to: &str) -> Result<String, TheShitError> {
     let end_pattern = format!(r" {}$", regex::escape(from));
-    let end_regex = Regex::new(&end_pattern).unwrap();
+    let end_regex = Regex::new(&end_pattern)?;
 
     if end_regex.is_match(script) {
-        return end_regex.replace(script, format!(" {to}")).to_string();
+        return Ok(end_regex.replace(script, format!(" {to}")).to_string());
     }
 
     let middle_pattern = format!(" {} ", regex::escape(from));
     let replacement = format!(" {to} ");
 
-    script.replacen(&middle_pattern, &replacement, 1)
+    Ok(script.replacen(&middle_pattern, &replacement, 1))
 }
 
 #[cfg(test)]

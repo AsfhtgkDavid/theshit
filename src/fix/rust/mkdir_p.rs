@@ -14,11 +14,10 @@ pub fn is_match(command: &Command) -> bool {
                 .contains("No such file or directory"))
 }
 
-pub fn fix(command: &Command) -> String {
-    Regex::new(r"\bmkdir (.*)")
-        .unwrap()
+pub fn fix(command: &Command) -> Result<String, crate::errors::TheShitError> {
+    Ok(Regex::new(r"\bmkdir (.*)")?
         .replace(command.command(), "mkdir -p $1")
-        .to_string()
+        .to_string())
 }
 
 #[cfg(test)]

@@ -12,8 +12,8 @@ pub fn is_match(command: &Command) -> bool {
     misc::string_similarity(&command.parts()[0], "cd") >= 0.5
 }
 
-pub fn fix(command: &Command) -> String {
-    "cd ".to_string() + &command.parts()[1..].join(" ")
+pub fn fix(command: &Command) -> Result<String, crate::errors::TheShitError> {
+    Ok("cd ".to_string() + &command.parts()[1..].join(" "))
 }
 
 #[cfg(test)]

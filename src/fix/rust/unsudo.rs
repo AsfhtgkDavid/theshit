@@ -16,8 +16,8 @@ pub fn is_match(command: &Command) -> bool {
     false
 }
 
-pub fn fix(command: &Command) -> String {
-    command.parts()[1..].join(" ")
+pub fn fix(command: &Command) -> Result<String, crate::errors::TheShitError> {
+    Ok(command.parts()[1..].join(" "))
 }
 
 #[cfg(test)]

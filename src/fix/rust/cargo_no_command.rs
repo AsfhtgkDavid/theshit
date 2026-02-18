@@ -11,14 +11,13 @@ pub fn is_match(command: &Command) -> bool {
         && command.parts()[0] == "cargo"
 }
 
-pub fn fix(command: &Command) -> String {
+pub fn fix(command: &Command) -> Result<String, crate::errors::TheShitError> {
     let broken = &command.parts()[1];
-    let fix = Regex::new(r"a command with a similar name exists: `([^`]*)`")
-        .unwrap()
+    let fix = Regex::new(r"a command with a similar name exists: `([^`]*)`")?
         .captures(command.output().stderr())
         .and_then(|caps| caps.get(1))
         .map(|m| m.as_str())
-        .unwrap();
+        .ok_or_else(|| crate::errors::TheShitError::Template("Could not find fix in error message".to_string()))?;
     misc::replace_argument(command.command(), broken, fix)
 }
 
