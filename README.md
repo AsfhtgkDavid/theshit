@@ -202,25 +202,7 @@ Configuration files are stored in `~/.config/theshit/`:
 
 ## Tricks and Tips
 
-### 1. Shell Integration
-
-For the best experience, add this to your shell configuration:
-
-**Bash (~/.bashrc):**
-
-```bash
-# Run theshit on double ESC
-bind '"\e\e": "theshit\n"'
-```
-
-**Zsh (~/.zshrc):**
-
-```zsh
-# Run theshit on double ESC
-bindkey -s '\e\e' 'theshit\n'
-```
-
-### 2. Alias Expansion
+### 1. Alias Expansion
 
 The tool automatically expands aliases before processing, so if you have:
 
@@ -230,7 +212,7 @@ alias ll='ls -la'
 
 And you run `ll /nonexistent`, the tool will process `ls -la /nonexistent`.
 
-### 3. Custom Alias Names
+### 2. Custom Alias Names
 
 You can use any alias name:
 
