@@ -237,8 +237,6 @@ fn get_command_timeout(command_name: &str) -> Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::__private::kind::TraitKind;
-    use std::io::ErrorKind;
 
     #[test]
     fn test_get_command_timeout_fast_commands() {

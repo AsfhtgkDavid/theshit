@@ -38,11 +38,15 @@ pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppR
     if rule_paths.is_empty() {
         return Ok(vec![]);
     }
+
     let module_path = get_common_parent(&rule_paths)
         .ok_or_else(|| AppError::Config("No common parent found for rule paths".to_string()))?;
+
     let mut fixed_commands: Vec<String> = vec![];
-    pyo3::prepare_freethreaded_python();
-    Python::with_gil(|py| -> Result<(), AppError> {
+
+    pyo3::Python::initialize();
+
+    Python::attach(|py| -> Result<(), AppError> {
         {
             let raw_sys_path = py
                 .import("sys")
@@ -50,9 +54,11 @@ pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppR
             let sys_path = raw_sys_path
                 .getattr("path")
                 .map_err(|e| AppError::Python(format!("Failed to get sys.path: {}", e)))?;
+
             let sys_path = sys_path
-                .downcast::<PyList>()
-                .map_err(|e| AppError::Python(format!("sys.path is not a list: {}", e)))?;
+                .cast_into::<PyList>()
+                .map_err(|e| AppError::Python(format!("Failed to cast sys.path: {}", e)))?;
+
             sys_path
                 .insert(0, module_path.to_string_lossy())
                 .map_err(|e| AppError::Python(format!("Failed to insert path: {}", e)))?;
@@ -68,74 +74,67 @@ pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppR
                 Some(module_name) => module_name,
                 None => continue,
             };
+
             let module = match py.import(&module_name) {
-                Ok(module) => module,
+                Ok(m) => m,
                 Err(e) => {
                     eprintln!(
                         "{}{}{}",
                         "Failed to import rule module '".yellow(),
                         rule_path.display(),
-                        "': ".yellow(),
+                        "': ".yellow()
                     );
                     eprintln!("{e}");
                     continue;
                 }
             };
+
             let match_func = match module.getattr("match") {
-                Ok(func) => func,
+                Ok(f) => f,
                 Err(e) => {
                     eprintln!(
                         "{}{}{}",
                         "Failed to get 'match' function from rule '".yellow(),
                         rule_path.display(),
-                        "': ".yellow(),
+                        "': ".yellow()
                     );
                     eprintln!("{e}");
                     continue;
                 }
             };
+
             let fix_func = match module.getattr("fix") {
-                Ok(func) => func,
+                Ok(f) => f,
                 Err(e) => {
                     eprintln!(
                         "{}{}{}",
                         "Failed to get 'fix' function from rule '".yellow(),
                         rule_path.display(),
-                        "': ".yellow(),
+                        "': ".yellow()
                     );
                     eprintln!("{e}");
                     continue;
                 }
             };
+
             if match_func.is_callable() && fix_func.is_callable() {
-                let is_match = match match_func
+                let should_apply = match_func
                     .call1((
                         command.command(),
                         command.output().stdout(),
                         command.output().stderr(),
                     ))
                     .and_then(|result| result.extract::<bool>())
-                {
-                    Ok(result) => result,
-                    Err(e) => {
-                        eprintln!(
-                            "{}{}{}",
-                            "Failed to execute 'match' function in rule '".yellow(),
-                            rule_path.display(),
-                            "': ".yellow(),
-                        );
-                        eprintln!("{e}");
-                        continue;
-                    }
-                };
-                if is_match {
-                    let fixed_command: String = match fix_func
+                    .unwrap_or(false);
+
+                if should_apply {
+                    let fixed_command = match fix_func
                         .call1((
                             command.command(),
                             command.output().stdout(),
                             command.output().stderr(),
                         ))
-                        .and_then(|result| result.extract())
+                        .and_then(|result| result.extract::<String>())
                     {
                         Ok(cmd) => cmd,
                         Err(e) => {
@@ -162,6 +161,7 @@ pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppR
         }
         Ok(())
     })?;
+
     Ok(fixed_commands)
 }
 
