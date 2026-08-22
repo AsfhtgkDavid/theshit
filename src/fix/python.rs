@@ -2,7 +2,7 @@ use super::structs::Command;
 use crate::error::{AppError, AppResult};
 use crossterm::style::Stylize;
 use pyo3::Python;
-use pyo3::types::{PyAnyMethods, PyList, PyListMethods};
+use pyo3::types::PyAnyMethods;
 use std::fs;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
@@ -34,6 +34,46 @@ fn check_security(path: &Path) -> AppResult<()> {
     Ok(())
 }
 
+/// Loads a single rule file directly from its path.
+///
+/// The rules directory is deliberately never placed on `sys.path`. Doing so made
+/// every file in it importable by name, including files that `check_security`
+/// had rejected, because a vetted rule importing a sibling resolved out of the
+/// same directory without any further check. Loading by path means only files
+/// that passed `check_security` are ever executed.
+fn load_module_from_path<'py>(
+    py: Python<'py>,
+    module_name: &str,
+    rule_path: &Path,
+) -> Result<pyo3::Bound<'py, pyo3::types::PyModule>, AppError> {
+    let py_err = |e| AppError::Python(format!("{}", e));
+
+    let util = py.import("importlib.util").map_err(py_err)?;
+
+    let spec = util
+        .call_method1(
+            "spec_from_file_location",
+            (module_name, rule_path.to_string_lossy().as_ref()),
+        )
+        .map_err(py_err)?;
+    if spec.is_none() {
+        return Err(AppError::Python(format!(
+            "could not build a module spec for '{}'",
+            rule_path.display()
+        )));
+    }
+
+    let module = util.call_method1("module_from_spec", (&spec,)).map_err(py_err)?;
+    spec.getattr("loader")
+        .map_err(py_err)?
+        .call_method1("exec_module", (&module,))
+        .map_err(py_err)?;
+
+    module.cast_into::<pyo3::types::PyModule>().map_err(|_| {
+        AppError::Python(format!("'{}' did not produce a module", rule_path.display()))
+    })
+}
+
 pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppResult<Vec<String>> {
     if rule_paths.is_empty() {
         return Ok(vec![]);
@@ -47,23 +87,6 @@ pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppR
     pyo3::Python::initialize();
 
     Python::attach(|py| -> Result<(), AppError> {
-        {
-            let raw_sys_path = py
-                .import("sys")
-                .map_err(|e| AppError::Python(format!("Failed to import sys: {}", e)))?;
-            let sys_path = raw_sys_path
-                .getattr("path")
-                .map_err(|e| AppError::Python(format!("Failed to get sys.path: {}", e)))?;
-
-            let sys_path = sys_path
-                .cast_into::<PyList>()
-                .map_err(|e| AppError::Python(format!("Failed to cast sys.path: {}", e)))?;
-
-            sys_path
-                .insert(0, module_path.to_string_lossy())
-                .map_err(|e| AppError::Python(format!("Failed to insert path: {}", e)))?;
-        }
-
         for rule_path in rule_paths {
             if let Err(e) = check_security(&rule_path) {
                 eprintln!("{}", e);
@@ -75,7 +98,7 @@ pub fn process_python_rules(command: &Command, rule_paths: Vec<PathBuf>) -> AppR
                 None => continue,
             };
 
-            let module = match py.import(&module_name) {
+            let module = match load_module_from_path(py, &module_name, &rule_path) {
                 Ok(m) => m,
                 Err(e) => {
                     eprintln!(
@@ -344,6 +367,52 @@ mod tests {
         assert!(result.is_ok());
         let commands = result.expect("Processing should succeed");
         assert!(commands.is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn sibling_file_in_rules_directory_is_not_importable() {
+        // Before the fix the rules directory went onto sys.path, so a rule that
+        // passed check_security could import any other file sitting beside it,
+        // including files check_security had rejected. Nothing in the directory
+        // should be importable by name now.
+        let temp = tempdir().expect("Failed to create temp dir");
+        let marker = temp.path().join("sibling_was_imported");
+
+        create_rule_file(
+            temp.path(),
+            "payload.py",
+            &format!(
+                "open(r'{}', 'w').write('imported')\n",
+                marker.to_string_lossy()
+            ),
+        );
+
+        let rule_path = create_rule_file(
+            temp.path(),
+            "importer.py",
+            r#"
+import payload
+def match(command, stdout, stderr):
+    return True
+def fix(command, stdout, stderr):
+    return "fixed-command"
+"#,
+        );
+
+        let cmd = dummy_command();
+        let result = process_python_rules(&cmd, vec![rule_path]);
+
+        assert!(result.is_ok(), "processing should not abort");
+        assert!(
+            result.expect("Processing should succeed").is_empty(),
+            "the rule imports a sibling and must fail to load"
+        );
+        assert!(
+            !marker.exists(),
+            "a file beside the rule was imported: {}",
+            marker.display()
+        );
     }
 
     #[test]
