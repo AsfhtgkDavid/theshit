@@ -63,14 +63,19 @@ fn load_module_from_path<'py>(
         )));
     }
 
-    let module = util.call_method1("module_from_spec", (&spec,)).map_err(py_err)?;
+    let module = util
+        .call_method1("module_from_spec", (&spec,))
+        .map_err(py_err)?;
     spec.getattr("loader")
         .map_err(py_err)?
         .call_method1("exec_module", (&module,))
         .map_err(py_err)?;
 
     module.cast_into::<pyo3::types::PyModule>().map_err(|_| {
-        AppError::Python(format!("'{}' did not produce a module", rule_path.display()))
+        AppError::Python(format!(
+            "'{}' did not produce a module",
+            rule_path.display()
+        ))
     })
 }
 
